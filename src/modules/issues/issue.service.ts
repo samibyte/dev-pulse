@@ -115,8 +115,62 @@ const getSingleIssueFromDB = async (issueId: number) => {
   }
 };
 
+const updateIssueInDB = async (issueId: number, payload: Partial<IIssue>) => {
+  const { title, description, type } = payload;
+
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (title !== undefined) {
+    values.push(title);
+    updates.push(`title=$${values.length}`);
+  }
+
+  if (description !== undefined) {
+    values.push(description);
+    updates.push(`description=$${values.length}`);
+  }
+
+  if (type !== undefined) {
+    values.push(type);
+    updates.push(`type=$${values.length}`);
+  }
+
+  if (updates.length === 0) {
+    throw new Error("No fields to update");
+  }
+
+  values.push(issueId);
+  updates.push(`updated_at=NOW()`);
+
+  try {
+    const result = await pool.query(
+      `UPDATE issues SET ${updates.join(", ")} WHERE id=$${values.length} RETURNING *`,
+      values,
+    );
+    return result.rows[0];
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+const deleteIssueInDB = async (issueId: number) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM issues WHERE id = $1 RETURNING *`,
+      [issueId],
+    );
+
+    return result.rows[0] ?? null;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 export const issueService = {
   createIssueInDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
+  updateIssueInDB,
+  deleteIssueInDB,
 };

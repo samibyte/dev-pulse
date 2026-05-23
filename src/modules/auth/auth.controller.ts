@@ -49,7 +49,7 @@ const loginUser = async (req: Request, res: Response) => {
     const { refreshToken } = result;
 
     res.cookie("refreshToken", refreshToken, {
-      secure: false, // In production => True
+      secure: true,
       httpOnly: true,
       sameSite: "lax",
     });

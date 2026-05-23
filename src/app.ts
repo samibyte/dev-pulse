@@ -4,6 +4,8 @@ import express, {
   type Response,
 } from "express";
 import { authRouter } from "./modules/auth/auth.route";
+import { issueRouter } from "./modules/issues/issue.route";
+import globalErrorHandler from "./middleware/globalErrorHandler";
 
 const app: Application = express();
 
@@ -18,5 +20,8 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/issues", issueRouter);
+
+app.use(globalErrorHandler);
 
 export default app;

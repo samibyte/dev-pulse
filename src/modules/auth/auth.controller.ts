@@ -3,6 +3,16 @@ import { authService } from "./auth.service";
 import sendResponse from "../../utils/sendResponse";
 
 const registerUser = async (req: Request, res: Response) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return sendResponse(res, {
+      statusCode: 400,
+      success: false,
+      message: "Name, email, and password are required",
+    });
+  }
+
   try {
     const result = await authService.createUserInDB(req.body);
 
@@ -14,15 +24,25 @@ const registerUser = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     sendResponse(res, {
-      statusCode: 500,
+      statusCode: error?.statusCode ?? 500,
       success: false,
-      message: error.message,
-      error: error,
+      message: error?.message ?? "Something went wrong",
+      error,
     });
   }
 };
 
 const loginUser = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return sendResponse(res, {
+      statusCode: 400,
+      success: false,
+      message: "Email and password are required",
+    });
+  }
+
   try {
     const result = await authService.loginUserInDB(req.body);
 
@@ -42,10 +62,10 @@ const loginUser = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     sendResponse(res, {
-      statusCode: 500,
+      statusCode: error?.statusCode ?? 500,
       success: false,
-      message: error.message,
-      error: error,
+      message: error?.message ?? "Something went wrong",
+      error,
     });
   }
 };

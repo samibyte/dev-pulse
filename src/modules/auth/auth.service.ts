@@ -3,26 +3,42 @@ import { pool } from "../../db/index";
 import type { IUser } from "./auth.interface";
 import jwt from "jsonwebtoken";
 import config from "../../config";
+import ApiError from "../../errors/ApiError";
 
 const createUserInDB = async (payload: IUser) => {
   const { name, email, password, role } = payload;
 
+  if (!name || !email || !password) {
+    throw ApiError.badRequest("Name, email, and password are required");
+  }
+
   const hashPassword = await bcrypt.hash(password, 10);
 
-  const result = await pool.query(
-    `
-     INSERT INTO users(name,email,password,role) VALUES($1,$2,$3,COALESCE($4,'contributor')) RETURNING *
-    `,
-    [name, email, hashPassword, role],
-  );
+  try {
+    const result = await pool.query(
+      `
+       INSERT INTO users(name,email,password,role) VALUES($1,$2,$3,COALESCE($4,'contributor')) RETURNING *
+      `,
+      [name, email, hashPassword, role],
+    );
 
-  delete result.rows[0].password;
+    delete result.rows[0].password;
 
-  return result;
+    return result;
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      throw ApiError.conflict("Email already exists");
+    }
+    throw error;
+  }
 };
 
 const loginUserInDB = async (payload: { email: string; password: string }) => {
   const { email, password } = payload;
+
+  if (!email || !password) {
+    throw ApiError.badRequest("Email and password are required");
+  }
 
   const userData = await pool.query(
     `
@@ -31,14 +47,14 @@ const loginUserInDB = async (payload: { email: string; password: string }) => {
     [email],
   );
   if (userData.rows.length === 0) {
-    throw new Error("Invalid Credentials!");
+    throw ApiError.unauthorized("Invalid credentials");
   }
 
   const user = userData.rows[0];
   const matchPassword = await bcrypt.compare(password, user.password);
 
   if (!matchPassword) {
-    throw new Error("Invalid Credentials!");
+    throw ApiError.unauthorized("Invalid credentials");
   }
 
   const jwtPayload = {
